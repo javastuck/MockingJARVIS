@@ -31,7 +31,7 @@ class FacialRecognition(State):
     def __init__(self,jarvis):
         self.jarvis = jarvis
         self.activity = "Classifying faces..."
-        
+        self.classifier = pickle.load(open('Faces.pkl', 'rb'))
     def ClassifyFaces():
         print self.activty
     def proceed(self):
