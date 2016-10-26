@@ -1,17 +1,25 @@
+import pickle
+from motion_detector import MotionDetector 
+
 class State(object):
     def identify(self):
         print "Currently helping ", self.attending
 
 class DetectingMotion(State):
+
     def __init__(self,jarvis):
         self.jarvis = jarvis
         self.activity = "Detecting Motion..."
-    	self.detecting = True
-    def detect_motion(detecting):
+    def detect_motion(self):
         print self.activity
+        self.jarvis.motion_detector.detect_motion()
+        print "Detected Motion"
+        self.proceed()
+            
             
     def proceed(self):
         self.jarvis.state=self.jarvis.scanningstate
+        
     def revert(self):
         return 0 #This is the base state
 
@@ -32,7 +40,8 @@ class FacialRecognition(State):
         self.jarvis = jarvis
         self.activity = "Classifying faces..."
         self.classifier = pickle.load(open('Faces.pkl', 'rb'))
-    def ClassifyFaces():
+    def ClassifyFace():
+        
         print self.activty
     def proceed(self):
         self.jarvis.state = self.jarvis.waitingstate
@@ -62,6 +71,10 @@ class Serving(State):
 class Jarvis(object):
     #"This is Jarvis, JAy's Replacement and Virtually Intelligent Servant."
     def __init__(self):
+        #observer = Observable()
+        #motion_detector = MotionObserver('Motion Detector')
+        #observer.register(motion_detector)
+        self.motion_detector = MotionDetector()
         self.detectingstate = DetectingMotion(self)
         self.scanningstate = Scanning(self)
         self.facestate = FacialRecognition(self)
@@ -69,6 +82,7 @@ class Jarvis(object):
         self.servingstate = Serving(self)
         self.state = self.detectingstate
 
+        
     def proceed(self):
         self.state.proceed()
 
@@ -79,11 +93,14 @@ class Jarvis(object):
 
 def main():
     jarvis = Jarvis()
-    actions = [jarvis.proceed,jarvis.revert,jarvis.proceed,jarvis.proceed]
+    jarvis.state.detect_motion()
+    #This could be an integration test
+    #actions = [jarvis.proceed,jarvis.revert,jarvis.proceed,jarvis.proceed]
+    '''
     for action in actions:
         action()
         print jarvis.state.activity
-
+    '''
 if __name__=='__main__':
     main()
 
