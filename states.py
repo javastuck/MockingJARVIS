@@ -1,4 +1,5 @@
 import pickle
+import pyttsx
 from motion_detector import MotionDetector 
 
 class State(object):
@@ -40,14 +41,33 @@ class FacialRecognition(State):
         self.jarvis = jarvis
         self.activity = "Classifying faces..."
         self.classifier = pickle.load(open('Faces.pkl', 'rb'))
-    def ClassifyFace():
+    def classify_face():
         
         print self.activty
+        
+    def proceed(self):
+        self.jarvis.state = self.jarvis.greetingstate
+    def revert(self):
+        self.jarvis.state = self.jarvis.detectingstate
+class GreetRoommate(State):
+    def __init__(self,jarvis):
+        
+        self.jarvis = jarvis
+        self.activity = "Greeting the roommate"
+        
+        #Initialize text to speech bit
+        self.voice = pyttsx.init()
+        
+    def greet_roommate(self):
+        self.voice.setProperty('rate', 90)
+        self.voice.say('Greetings, {}'.format(self.jarvis.attending))
+        #engine.say('The quick brown fox jumped over the lazy dog.')
+        self.voice.runAndWait()
+        self.proceed()
     def proceed(self):
         self.jarvis.state = self.jarvis.waitingstate
     def revert(self):
-        self.jarvis.state = self.jarvis.detectingstate
-
+        self.jarvis.state = self.jarvis.facestate
 class WaitingForTask(State):
     def __init__(self,jarvis):
         self.jarvis = jarvis
@@ -78,6 +98,7 @@ class Jarvis(object):
         self.detectingstate = DetectingMotion(self)
         self.scanningstate = Scanning(self)
         self.facestate = FacialRecognition(self)
+        self.greetingstate = GreetRoommate(self)
         self.waitingstate = WaitingForTask(self)
         self.servingstate = Serving(self)
         self.state = self.detectingstate
@@ -94,6 +115,9 @@ class Jarvis(object):
 def main():
     jarvis = Jarvis()
     jarvis.state.detect_motion()
+    jarvis.attending = "Justin"
+    jarvis.state = jarvis.greetingstate
+    jarvis.state.greet_roommate()
     #This could be an integration test
     #actions = [jarvis.proceed,jarvis.revert,jarvis.proceed,jarvis.proceed]
     '''
