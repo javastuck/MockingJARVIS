@@ -4,5 +4,5 @@ class Observer(object):
     __metaclass__ = ABCMeta
  
     @abstractmethod
-    def update(self, *args, **kwargs):
+    def receive_message(self, sender,event,message):
         pass
