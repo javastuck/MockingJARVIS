@@ -7,14 +7,14 @@ import datetime
 import imutils
 import time
 import cv2
+import freenect
 
 class MotionDetector():
     def __init__(self,name=None):
         self.name = name
         self.detecting = True
-    def detect_motion(self, camera):
+    def detect_motion(self):
         # initialize the first frame in the video stream
-
         firstFrame = None
 
         transition = False
@@ -24,13 +24,9 @@ class MotionDetector():
         while self.detecting:
             # grab the current frame and initialize the occupied/unoccupied
             # text
-            (grabbed, frame) = camera.read()
+            frame = freenect.sync_get_video()[0]
             text = "Unoccupied"
 
-            # if the frame could not be grabbed, then we have reached the end
-            # of the video
-            if not grabbed:
-                break
 
             # resize the frame, convert it to grayscale, and blur it
             frame = imutils.resize(frame, width=500)
@@ -50,10 +46,10 @@ class MotionDetector():
             # dilate the thresholded image to fill in holes, then find contours
             # on thresholded image
             thresh = cv2.dilate(thresh, None, iterations=2)
-            (cnts, _) = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-                cv2.CHAIN_APPROX_SIMPLE)
-            #(_, cnts, _) = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, 
+            #(cnts, _) = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
             #    cv2.CHAIN_APPROX_SIMPLE)
+            (_, cnts, _) = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, 
+                cv2.CHAIN_APPROX_SIMPLE)
 
             # loop over the contours
             for c in cnts:
@@ -84,6 +80,7 @@ class MotionDetector():
                 break
             if text == "Occupied":
                 self.detecting = False
+                cv2.destroyAllWindows()
                 break
         # cleanup the camera and close any open windows
         

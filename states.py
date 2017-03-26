@@ -2,11 +2,11 @@ import pickle
 import pyttsx
 import cv2
 import time
-
+import freenect
 from motion_detector import MotionDetector 
 from face_detector import FaceDetector
 from face_recognizer import FaceRecognizer
-from Mixins.CameraIter import Camera
+#from Mixins.CameraIter import Camera
 
 class State(object):
     def identify(self):
@@ -32,7 +32,7 @@ class DetectingMotion(State):
         self.activity = "Detecting Motion..."
     def detect_motion(self):
         print self.activity
-        self.jarvis.motion_detector.detect_motion(self.jarvis.camera)
+        self.jarvis.motion_detector.detect_motion()
         print "Detected Motion"
         self.proceed()
             
@@ -48,11 +48,11 @@ class Scanning(State):
         self.jarvis = jarvis
         self.activity = "Scanning for Faces..."
     def detect_faces(self):
-        faces = self.jarvis.face_detector.detect_faces(self.jarvis.camera)
-        print("shape of faces:{}".format(faces.shape))        
+        faces = self.jarvis.face_detector.detect_faces()        
         print self.activity
         self.proceed(faces)
     def proceed(self,faces):
+        print "Moving on"
         self.jarvis.state = self.jarvis.facestate
         self.jarvis.state.classify_face(faces)
     def revert(self):
@@ -67,16 +67,18 @@ class FacialRecognition(State):
     def classify_face(self,faces):
         names = self.jarvis.face_recognizer.recognize_faces(faces)
         print names
-        self.jarvis.attending = max(set(names),key=names.count)
-        print self.activty
-        self.proceed()
-        
+        if names:
+            self.jarvis.attending = max(set(names),key=names.count)
+            print self.activity
+            self.proceed()
+        else:
+            self.revert()
     def proceed(self):
         self.jarvis.state = self.jarvis.greetingstate
         self.jarvis.state.greet_roommate()
     def revert(self):
         self.jarvis.state = self.jarvis.detectingstate
-
+        self.jarvis.state.detect_motion()
         
 class GreetRoommate(State):
     def __init__(self,jarvis):
@@ -88,14 +90,16 @@ class GreetRoommate(State):
         self.voice = pyttsx.init()
         
     def greet_roommate(self):
-        self.voice.setProperty('rate', 90)
-        self.voice.say('Greetings, {}'.format(self.jarvis.attending))
-        #engine.say('The quick brown fox jumped over the lazy dog.')
+        self.voice.setProperty('rate', 150)
+        self.voice.say('Good morning, {}. The weather is... What can I do for you?'.format(self.jarvis.attending))
+        # weather string r = requests.get('http://api.openweathermap.org/data/2.5/forecast?#id=4887398&APPID=f2a298c561abf394a488fda67700a579')
+        # engine.say('The quick brown fox jumped over the lazy dog.')
         self.voice.runAndWait()
         self.proceed()
     def proceed(self):
         self.jarvis.state = self.jarvis.waitingstate
         print self.jarvis.state.activity
+        self.jarvis.state.wait()
     def revert(self):
         self.jarvis.state = self.jarvis.facestate
 
@@ -104,9 +108,12 @@ class WaitingForTask(State):
     def __init__(self,jarvis):
         self.jarvis = jarvis
         self.activity = "Waiting for Task..."
-    
+    def wait(self):
+        print "waiting"
+        self.proceed()
     def proceed(self):
         self.jarvis.state = self.jarvis.servingstate
+        self.jarvis.state.serve()
     def revert(self):
         self.jarvis.state = self.jarvis.detectingstate
 
@@ -115,8 +122,12 @@ class Serving(State):
     def __init__(self,jarvis):
         self.jarvis = jarvis
         self.activity = "Serving roommate"
+    def serve(self):
+        print self.activity
+        self.proceed()
     def proceed(self):
-        self.jarvis.state = self.jarvis.waitingstate
+        self.jarvis.state = self.jarvis.detectingstate
+        self.jarvis.state.detect_motion()
     def revert(self):
         self.jarvis.state = self.jarvis.waitingstate
 
@@ -125,11 +136,6 @@ class Serving(State):
 class Jarvis(object):
     #"This is Jarvis, JAy's Replacement and Virtually Intelligent Servant."
     def __init__(self):
-        #observer = Observable()
-        #motion_detector = MotionObserver('Motion Detector')
-        #observer.register(motion_detector)
-        self.camera = cv2.VideoCapture(0)
-        time.sleep(0.5)
         self.motion_detector = MotionDetector()
         self.face_detector = FaceDetector()
         self.face_recognizer = FaceRecognizer()

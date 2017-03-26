@@ -5,6 +5,7 @@ import sys
 import PIL
 import time
 import imutils
+import freenect
 from PIL import Image
 
 basewidth = 94
@@ -18,7 +19,7 @@ class FaceDetector():
         self.faces = []
         self.done_detecting = False
         
-    def detect_faces(self, camera):
+    def detect_faces(self, camera=None):
     
         cascPath = "haarcascade_frontalface_default.xml"
         faceCascade = cv2.CascadeClassifier(cascPath)
@@ -30,7 +31,7 @@ class FaceDetector():
         while True:
             # Capture frame-by-frame
             counter += 1
-            (ret, frame) = camera.read()
+            frame = freenect.sync_get_video()[0]
             
             #frame = imutils.resize(frame, width=94, height=125)    
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -40,7 +41,7 @@ class FaceDetector():
                 scaleFactor=1.1,
                 minNeighbors=5,
                 minSize=(30, 30),
-                flags=cv2.cv.CV_HAAR_SCALE_IMAGE
+                #flags=cv2.cv.CV_HAAR_SCALE_IMAGE
             )
             '''
             if len(faces)!=0:
@@ -52,43 +53,28 @@ class FaceDetector():
                 faceInFrame=False
             '''
             #refactor this to remove the breaks
-            if len(self.faces)<11:
+            if len(self.faces)<3:
                 
                 # Draw a rectangle around the faces
                 for (x, y, w, h) in faces:
                     cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
                     cv2.imshow('Video', frame)                    
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    frame = cv2.resize(frame, (94,125))
-                    #cv2.imwrite(name, frame[y-int(.1*h): y + h, x: x + w])            
-                    #img = frame[y-int(.1*h): y + h, x: x + w]            
-                    #img = Image.open(name).convert('LA')            
-
-                    #img = img.resize((basewidth, hsize), PIL.Image.ANTIALIAS)
-                    #cv2.imwrite("Justin/face{}.jpeg".format(counter/5), img)
-                    #frame = frame[y-int(1.1*h): y + h, x: x + w]                
-                    #frame = imutils.resize(frame, width=94, height=125)  
-                    #print frame.shape
-                    face = np.asarray(frame).reshape(1,125,94).ravel()
-                    #print face
-                    self.faces.append(face)
+                    #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    #frame = cv2.resize(frame, (94,125))      
+                    #face = np.asarray(frame).reshape(1,125,94).ravel()
+                    self.faces.append(frame)
 
             else:
                 # When everything is done, release the capture        
-                camera.release()
                 cv2.destroyAllWindows()
                 return np.asarray(self.faces)
-
-            # Display the resulting frame
-            #cv2.imshow('Video', frame)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
-                camera.release()
                 cv2.destroyAllWindows()
                 return np.asarray(self.faces)
 
 
-
+'''
 def main():
     camera = cv2.VideoCapture(0)
     detector = FaceDetector()
@@ -98,7 +84,7 @@ def main():
     
     return faces
 a = main()
-
+'''
 
 
 
